@@ -83,6 +83,7 @@ st.markdown("""
     .main {
         background-color: #F8FAFC;
     }
+    /* 탭 스타일 */
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
     }
@@ -96,6 +97,7 @@ st.markdown("""
         background-color: #6366f1 !important;
         color: white !important;
     }
+    /* 카드 스타일 */
     .card {
         background-color: white;
         padding: 20px;
@@ -107,9 +109,14 @@ st.markdown("""
     .flight-card {
         border-left: 5px solid #6366f1;
     }
-    .highlight {
-        color: #6366f1;
-        font-weight: bold;
+    /* 체크박스 정렬 보정 */
+    div[data-testid="stCheckbox"] {
+        padding-top: 10px; /* 체크박스를 아래로 내려 텍스트와 중앙 정렬 */
+    }
+    /* 입력창 스타일 */
+    .stTextInput input {
+        background-color: #f8fafc;
+        border-radius: 8px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -122,7 +129,7 @@ st.caption("📅 2025.12.27 ~ 12.31 (4박 5일) | 🏨 쉐라톤 미야코 오�
 tabs = st.tabs(["✅ 준비물", "✈️ 항공/공항", "🗓️ 일정표", "❤️ 저장됨"])
 
 # --------------------------------------------------------------------------------
-# 탭 1: 체크리스트
+# 탭 1: 체크리스트 (디자인 개선됨)
 # --------------------------------------------------------------------------------
 with tabs[0]:
     st.markdown("### 📝 여행 준비물 체크리스트")
@@ -131,40 +138,51 @@ with tabs[0]:
     checklist = st.session_state.data["checklist"]
     
     for category, items in checklist.items():
-        with st.expander(f"📌 {category}", expanded=True):
-            for i, item in enumerate(items):
-                col1, col2 = st.columns([0.1, 0.9])
-                with col1:
-                    checked = st.checkbox(
-                        "", 
-                        value=item["checked"], 
-                        key=f"check_{category}_{i}",
-                        label_visibility="collapsed"
-                    )
-                with col2:
-                    # 체크 상태 업데이트 및 저장
-                    if checked != item["checked"]:
-                        item["checked"] = checked
-                        save_data(st.session_state.data)
-                        st.rerun()
-                    
-                    # 메모 입력 (엔터 치면 저장됨)
-                    new_memo = st.text_input(
-                        label=item["name"],
-                        value=item["memo"],
-                        placeholder="메모 입력...",
-                        key=f"memo_{category}_{i}",
-                        label_visibility="collapsed" if item["memo"] else "visible"
-                    )
-                    if new_memo != item["memo"]:
-                        item["memo"] = new_memo
-                        save_data(st.session_state.data)
-
-                # 아이템 이름 표시 (체크되면 취소선)
+        st.markdown(f"##### 📌 {category}")
+        
+        # 반복문으로 항목 출력
+        for i, item in enumerate(items):
+            # 레이아웃: [체크박스(5%)] [항목이름(40%)] [메모(55%)]
+            c1, c2, c3 = st.columns([0.08, 0.42, 0.5])
+            
+            with c1:
+                # 체크박스
+                checked = st.checkbox(
+                    "", 
+                    value=item["checked"], 
+                    key=f"check_{category}_{i}",
+                    label_visibility="collapsed"
+                )
+                
+            with c2:
+                # 항목 이름 (체크 시 취소선 및 색상 변경)
+                # padding-top으로 수직 중앙 정렬 맞춤
+                text_style = "text-decoration: line-through; color: #94a3b8;" if checked else "font-weight: bold; color: #334155;"
                 st.markdown(
-                    f"<div style='margin-top: -35px; margin-left: 30px; margin-bottom: 10px; color: {'#94a3b8' if checked else '#1e293b'}; text-decoration: {'line-through' if checked else 'none'}; font-weight: bold;'>{item['name']}</div>", 
+                    f"<div style='padding-top: 8px; {text_style}'>{item['name']}</div>", 
                     unsafe_allow_html=True
                 )
+                
+            with c3:
+                # 메모 입력창 (심플하게)
+                new_memo = st.text_input(
+                    "memo",
+                    value=item["memo"],
+                    key=f"memo_{category}_{i}",
+                    label_visibility="collapsed",
+                    placeholder="메모..."
+                )
+
+            # 데이터 저장 로직
+            if checked != item["checked"] or new_memo != item["memo"]:
+                item["checked"] = checked
+                item["memo"] = new_memo
+                save_data(st.session_state.data)
+                # 체크 상태가 바뀌었을 때만 리런하여 스타일 적용 (메모는 리런 없이 입력 가능하게)
+                if checked != item["checked"]:
+                    st.rerun()
+        
+        st.markdown("---") # 카테고리 구분선
 
 # --------------------------------------------------------------------------------
 # 탭 2: 항공/공항
@@ -291,3 +309,7 @@ with st.sidebar:
         st.rerun()
     
     st.info("입력하신 데이터는 'osaka_data.json' 파일에 자동 저장됩니다.")
+    
+    st.markdown("---")
+    st.markdown("### 🔗 공유 링크")
+    st.success("https://osaka-kkookkoo.streamlit.app/")
